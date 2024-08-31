@@ -1,0 +1,1 @@
+from .geoname_api import RestAdapter
