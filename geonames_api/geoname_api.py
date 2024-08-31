@@ -1,5 +1,6 @@
 import requests
 import requests.packages
+from requests.exceptions import JSONDecodeError, RequestException
 from typing import List, Dict
 
 
@@ -23,28 +24,52 @@ class RestAdapter:
             ep_params = {}
         ep_params.update({'username': self.username})
 
-        print(f"Request List: {ep_params}\n\n")
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (compatible; MyPythonScript/1.0)',
+            'x-api-key': self._api_key}
+
+        # print(f"Request List: {ep_params}\n\n")
 
         full_url = self.url + endpoint
         # headers = {'x-api-key': self._api_key}
 
 
-
-        response = requests.request(
-            method=http_method,
-            url=full_url,
-            verify=self._ssl_verify,
-            # headers=headers,
-            params=ep_params,
-            json=data)
+        try:
+            response = requests.request(
+                method=http_method,
+                url=full_url,
+                headers=headers,
+                verify=self._ssl_verify,
+                # headers=headers,
+                params=ep_params,
+                json=data,
+                timeout=10)
         
-        # print(f"Response status code: {response.status_code}")
-        # print(f"Response content: {response.text}")
-        data_out = response.json()
+            # print(f"Response status code: {response.status_code}")
+            # print(f"Response content: {response.text}")
 
-        if response.status_code >= 200 and response.status_code <= 299:     # OK
+            if not response.ok:
+                raise RequestException(f"HTTP Error")
+            try:
+                data_out = response.json()
+            
+            except JSONDecodeError as e:
+                raise JSONDecodeError(f"JSON Decode Error")
+            
             return data_out
-        raise Exception(data_out["message"])    # Todo: raise custom exception later
+
+        except RequestException as req_err:
+            # print(f"Request failed")
+            raise
+        
+        except JSONDecodeError as json_err:
+            print(f"Failed to decode JSON")
+            raise
+
+        except Exception as err:
+            print(f"An unexpected error occurred")
+            raise
+
     
 
 
